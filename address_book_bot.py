@@ -1,3 +1,4 @@
+"""Консольний бот для управління адресною книгою"""
 import sys
 import pickle
 from collections import UserDict
@@ -145,7 +146,7 @@ class AddressBook(UserDict):
     def write_to_file(self, filename):
         """Метод зберігає адресну книгу у файл"""
         with open(filename, "wb") as fh:
-            pickle.dump(self.data, fh)        
+            pickle.dump(self.data, fh)
 
 
     @classmethod
@@ -157,7 +158,7 @@ class AddressBook(UserDict):
                 address_book = cls()
                 address_book.data = data
                 return address_book
-        except (FileNotFoundError, EOFError)  as err:
+        except (FileNotFoundError, EOFError):
             return AddressBook()
 
 
@@ -202,7 +203,7 @@ def hello_user():
     """
     return "How can I help you?"
 
-    
+
 @errors_commands
 def add_contact(name, phone):
     """Функція обробляє команду 'add'"""
@@ -213,7 +214,7 @@ def add_contact(name, phone):
         record = Record(name)
         record.add_phone(phone)
         _address_book.add_record(record)
-        return f"Contact {name} added."
+        return f"Contact {name.capitalize()} added."
     except Exception as err:
         return str(err)
 
@@ -230,7 +231,7 @@ def change_phone(name, phone):
             raise ValueError("Invalid phone number.")
         record.edit_phone(record.phones[0].value, phone)  # assuming only one phone per contact
         _address_book.write_to_file("my_address_book")
-        return f"Phone {name} changed."
+        return f"Phone {name.capitalize()} changed."
     except Exception as err:
         return str(err)
 
@@ -243,7 +244,7 @@ def show_phone(name):
         record = _address_book.find(name)
         if not record:
             raise KeyError("Contact not found.")
-        return f"The phone {name} is {record.phones[0].value}"  # assuming only one phone per contact
+        return f"The phone {name.capitalize()} is {record.phones[0].value}"  # assuming only one phone per contact
     except Exception as err:
         return str(err)
 
@@ -254,10 +255,18 @@ def show_all():
     global _address_book
     try:
         if _address_book:
-            return "\n".join([f"{name}: {record.phones[0].value}" for name, record in _address_book.items()])
+            return "\n".join([f"{name.capitalize()}: {record.phones[0].value}" for name, record in _address_book.items()])
         return "No contacts found."
     except Exception as err:
         return str(err)
+
+def found(query):
+    """Функція шукає контакти за декількома літерами імені або цифрами номера"""  
+    global _address_book
+    records = _address_book.search(query)
+    if records:
+        return "\n".join([record.name.value.capitalize() for record in records])
+    return "No contacts found."
 
 def farewell():
     """Функція обробляє команди виходу
@@ -274,6 +283,7 @@ def parser_command(user_command):
         'change': change_phone,
         'phone': show_phone,
         'show all': show_all,
+        'found': found,
         'good bye': farewell,
         'close': farewell,
         'exit': farewell
