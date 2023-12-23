@@ -90,9 +90,8 @@ class Record:
         """Метод для редагування об'єктів"""
         for phone in self.phones:
             if phone.value == old_phone_number:
-                phone.value = new_phone_number
+                self.add_phone(new_phone_number)
                 return
-
         raise ValueError("Phone number to be edited was not found")
 
     def days_to_birthday(self):
@@ -113,7 +112,8 @@ class Record:
 
     def __str__(self):
         """Метод створює рядок"""
-        return f"Contact name: {self.name.value}, phones: {'; '.join(p.value for p in self.phones)}"
+        phones_list = ', '.join(p.value for p in self.phones)
+        return f"Contact name: {self.name.value}, phones: [{phones_list}]"
 
 
 class AddressBook(UserDict):
@@ -211,6 +211,11 @@ def add_contact(name, phone):
     try:
         if not name.isalpha() or not phone.isnumeric():
             raise ValueError
+        if _address_book.find(name):
+            record = _address_book.find(name)
+            record.add_phone(phone)
+            return f"Phone {phone} added to {name.capitalize()}'s contact."
+        
         record = Record(name)
         record.add_phone(phone)
         _address_book.add_record(record)
@@ -229,8 +234,10 @@ def change_phone(name, phone):
             raise KeyError("Contact not found.")
         if not phone.isnumeric():
             raise ValueError("Invalid phone number.")
-        record.edit_phone(record.phones[0].value, phone)  # assuming only one phone per contact
-        _address_book.write_to_file("my_address_book")
+        # Видаляємо перший телефон зі списку та додаємо новий
+        old_phone = record.phones[0].value if record.phones else None
+        record.remove_phone(old_phone)
+        record.add_phone(phone)
         return f"Phone {name.capitalize()} changed."
     except Exception as err:
         return str(err)
@@ -244,7 +251,10 @@ def show_phone(name):
         record = _address_book.find(name)
         if not record:
             raise KeyError("Contact not found.")
-        return f"The phone {name.capitalize()} is {record.phones[0].value}"  # assuming only one phone per contact
+        capitalized_name = record.name.value.capitalize()
+        # Формуємо список телефонів у форматі list
+        phones_list = [phone.value for phone in record.phones]
+        return f"The phone {capitalized_name} is {phones_list}"
     except Exception as err:
         return str(err)
 
@@ -255,10 +265,16 @@ def show_all():
     global _address_book
     try:
         if _address_book:
-            return "\n".join([f"{name.capitalize()}: {record.phones[0].value}" for name, record in _address_book.items()])
+            contacts_info = []
+            for name, record in _address_book.items():
+                capitalized_name = record.name.value.capitalize()
+                phones_list = [phone.value for phone in record.phones]
+                contacts_info.append(f"The phone {capitalized_name} is {phones_list}")
+            return "\n".join(contacts_info)
         return "No contacts found."
     except Exception as err:
         return str(err)
+
 
 def found(query):
     """Функція шукає контакти за декількома літерами імені або цифрами номера"""  
@@ -299,6 +315,8 @@ def parser_command(user_command):
         command_2 = user_command[0]+' '+ user_command[1]
         if command_2 in users_commands:
             parser_result = users_commands[command_2]()
+        else:
+            parser_result = 'Invalid command.'
     else:
         parser_result = 'Invalid command.'
     return parser_result
