@@ -225,23 +225,26 @@ def add_contact(name, phone):
 
 
 @errors_commands
-def change_phone(name, phone):
+def change_phone(name, old_phone_number, new_phone_number):
     """Функція обробляє команду 'change'"""
     global _address_book
     try:
         record = _address_book.find(name)
         if not record:
             raise KeyError("Contact not found.")
-        if not phone.isnumeric():
+        if not old_phone_number.isnumeric() or not new_phone_number.isnumeric():
             raise ValueError("Invalid phone number.")
-        # Видаляємо перший телефон зі списку та додаємо новий
-        old_phone = record.phones[0].value if record.phones else None
-        record.remove_phone(old_phone)
-        record.add_phone(phone)
-        return f"Phone {name.capitalize()} changed."
+        old_phone = record.find_phone(old_phone_number)
+        if old_phone:
+            # Видаляємо старий номер та додаємо новий
+            record.remove_phone(old_phone_number)
+            record.add_phone(new_phone_number)
+            return f"Phone number for {name.capitalize()} changed."
+        else:
+            return f"The old phone number {old_phone_number} was not found for {name.capitalize()}. No changes made."
     except Exception as err:
         return str(err)
-
+    
 
 @errors_commands
 def show_phone(name):
